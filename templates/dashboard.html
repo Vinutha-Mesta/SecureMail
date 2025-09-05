@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <div class="dashboard-header">
+        <div>
+            <h2 class="dashboard-title">Email Security Dashboard</h2>
+            <p class="welcome-text">Welcome back, {{ session.username }}!</p>
+        </div>
+        <div>
+            <a href="{{ url_for('analyze_email') }}" class="btn btn-accent">
+                <i class="fas fa-plus"></i> New Analysis
+            </a>
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <h3>Email Classification Distribution</h3>
+        <div class="chart-wrapper">
+            <canvas id="classificationChart"></canvas>
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <h3>Top Suspicious Keywords Frequency</h3>
+        <div class="chart-wrapper">
+            <canvas id="keywordsChart"></canvas>
+        </div>
+    </div>
+
+    <div class="history-section" id="history">
+        <h3>Previous Analyses</h3>
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Email Snippet</th>
+                    <th>Classification</th>
+                    <th>Keywords Found</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for submission in submissions %}
+                <tr>
+                    <td>{{ submission.timestamp.strftime('%b %d, %Y') }}</td>
+                    <td>{{ submission.email_content[:50] }}...</td>
+                    <td>
+                        {% if submission.classification == 'SAFE' %}
+                        <span class="score-badge badge-high">SAFE</span>
+                        {% elif submission.classification == 'SUSPICIOUS' %}
+                        <span class="score-badge badge-medium">SUSPICIOUS</span>
+                        {% else %}
+                        <span class="score-badge badge-low">DANGEROUS</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ submission.suspicious_keywords or 'None' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Classification Pie Chart
+    const classificationCtx = document.getElementById('classificationChart').getContext('2d');
+    const classificationChart = new Chart(classificationCtx, {
+        type: 'pie',
+        data: {
+            labels: ['SAFE', 'SUSPICIOUS', 'DANGEROUS'],
+            datasets: [{
+                data: [
+                    {{ classification_counts.SAFE }},
+                    {{ classification_counts.SUSPICIOUS }},
+                    {{ classification_counts.DANGEROUS }}
+                ],
+                backgroundColor: [
+                    '#28a745', // Green for SAFE
+                    '#ffc107', // Yellow for SUSPICIOUS
+                    '#dc3545'  // Red for DANGEROUS
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                title: {
+                    display: true,
+                    text: 'Email Classification Distribution'
+                }
+            }
+        }
+    });
+
+    // Keywords Line Chart
+    const keywordsCtx = document.getElementById('keywordsChart').getContext('2d');
+    const keywordsChart = new Chart(keywordsCtx, {
+        type: 'line',
+        data: {
+            labels: {{ top_keywords|map(attribute='0')|list|tojson }},
+            datasets: [{
+                label: 'Frequency',
+                data: {{ top_keywords|map(attribute='1')|list|tojson }},
+                backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                borderColor: '#007bff',
+                borderWidth: 3,
+                pointBackgroundColor: '#007bff',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                pointRadius: 5,
+                pointHoverRadius: 7,
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                title: {
+                    display: true,
+                    text: 'Top Suspicious Keywords Frequency'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Frequency'
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.1)'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Keywords'
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.1)'
+                    }
+                }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            }
+        }
+    });
+</script>
+{% endblock %}

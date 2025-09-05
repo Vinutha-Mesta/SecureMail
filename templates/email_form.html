@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Analyze Email{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <div class="dashboard-header">
+        <div>
+            <h2 class="dashboard-title">Analyze Email Content</h2>
+            <p class="welcome-text">Check your emails for security risks</p>
+        </div>
+    </div>
+
+    <div class="analysis-card">
+        <h3>Paste Email Content</h3>
+        <form method="POST" action="{{ url_for('analyze_email') }}">
+            <div class="form-group">
+                <label for="email_content">Email Content</label>
+                <textarea id="email_content" name="email_content" class="form-control" 
+                         rows="10" placeholder="Paste the email content you want to analyze for security risks..." required></textarea>
+            </div>
+            <button type="submit" class="btn">Analyze Email</button>
+        </form>
+    </div>
+
+    {% if analysis_result %}
+    <div class="results-container">
+        <h3>Analysis Results</h3>
+        <div class="score-display">
+            <div class="score-circle 
+                {% if analysis_result.classification == 'SAFE' %}score-high
+                {% elif analysis_result.classification == 'SUSPICIOUS' %}score-medium
+                {% else %}score-low{% endif %}">
+                {{ analysis_result.classification }}
+            </div>
+            <h4>
+                {% if analysis_result.classification == 'SAFE' %}Secure Email
+                {% elif analysis_result.classification == 'SUSPICIOUS' %}Suspicious Email
+                {% else %}Dangerous Email{% endif %}
+            </h4>
+            <p>
+                {% if analysis_result.classification == 'SAFE' %}This email appears to be safe with no significant security risks detected.
+                {% elif analysis_result.classification == 'SUSPICIOUS' %}This email shows some suspicious characteristics that require caution.
+                {% else %}This email contains dangerous elements that pose a security risk.{% endif %}
+            </p>
+        </div>
+
+        <div class="analysis-details">
+            <div class="detail-item">
+                <span class="detail-name">Suspicious Keywords</span>
+                <span class="detail-value">
+                    {% if analysis_result.suspicious_keywords %}
+                        {{ analysis_result.suspicious_keywords|length }} detected
+                    {% else %}
+                        <i class="fas fa-check-circle" style="color: var(--success);"></i> None
+                    {% endif %}
+                </span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-name">Dangerous Keywords</span>
+                <span class="detail-value">
+                    {% if analysis_result.dangerous_keywords %}
+                        {{ analysis_result.dangerous_keywords|length }} detected
+                    {% else %}
+                        <i class="fas fa-check-circle" style="color: var(--success);"></i> None
+                    {% endif %}
+                </span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-name">Suspicious URLs</span>
+                <span class="detail-value">
+                    {% if analysis_result.suspicious_urls %}
+                        {{ analysis_result.suspicious_urls|length }} detected
+                    {% else %}
+                        <i class="fas fa-check-circle" style="color: var(--success);"></i> None
+                    {% endif %}
+                </span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-name">Sender Anomalies</span>
+                <span class="detail-value">
+                    {% if analysis_result.sender_anomalies %}
+                        <i class="fas fa-exclamation-triangle" style="color: var(--warning);"></i> Detected
+                    {% else %}
+                        <i class="fas fa-check-circle" style="color: var(--success);"></i> None
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
